@@ -17,23 +17,33 @@
 from decimal import Decimal
 import json
 import boto3
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+table = dynamodb.Table('Movies')
 
 
-def load_movies(movies, dynamodb=None):
-    if not dynamodb:
-        dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-
-
-    table = dynamodb.Table('Movies')
-    for movie in movies:
-        year = int(movie['year'])
-        title = movie['title']
-        info = movie['info']
-        print("Adding movie:", year, title, info)
-        table.put_item(Item=movie)
-
+def loadfile(infile):
+    jsonobj = json.load(open('/Users/gowthamshashank/downloads/aws1/moviedata.json'))
+    lc = 1
+    for movie in jsonobj:
+        lc += 1
+        CreateTime = int(time.time())
+        ExpireTime = CreateTime + (1* 60* 60)
+        response = table.put_item(
+           Item={
+                'Year': decimal.Decimal(movie['year']),
+                'Title': movie['title'],
+                'info': json.dumps(movie['info']),
+                'CreateTime': CreateTime,
+                'ExpireTime': ExpireTime
+            }
+        )
+        if (lc % 10) == 0:
+            print ("%d rows inserted" % (lc))
 
 if __name__ == '__main__':
-    with open("moviedata.json") as json_file:
-        movie_list = json.load(json_file, parse_float=Decimal)
-    load_movies(movie_list)
+    filename = sys.argv[1]
+    if os.path.exists('/Users/gowthamshashank/downloads/aws1'):
+        # file exists, continue
+        loadfile(filename)
+    else:
+        print ('Please enter a valid filename')
